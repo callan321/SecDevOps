@@ -1,0 +1,44 @@
+services:
+  mongo:
+    build: 
+      context: ./db
+      dockerfile: Dockerfile.db 
+    environment:
+      MONGO_INITDB_DATABASE: employees
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    restart: always
+
+  mongo-express:
+    build:
+      context: ./db
+      dockerfile: Dockerfile.mongo-express
+    depends_on:
+      - mongo
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/employees
+      ME_CONFIG_BASICAUTH_USERNAME: admin 
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+    ports:
+      - "8081:8081"   
+    restart: always
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      ATLAS_URI: mongodb://mongo:27017/employees
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "5000:5000"                
+    restart: always
+
+volumes:
+  mongo_data:

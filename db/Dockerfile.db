@@ -1,0 +1,7 @@
+FROM mongo:8.0
+
+EXPOSE 27017
+
+# Use JSON form to avoid shell/quoting issues
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=5 \
+  CMD ["mongosh","--quiet","--eval","db.adminCommand({ ping: 1 })"]

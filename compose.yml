@@ -39,6 +39,24 @@ services:
     ports:
       - "5000:5000"                
     restart: always
+  
+  build-client:
+    build:
+      context: ./client
+    volumes:
+      - ./client/build:/out
+    restart: "no"
+
+  web:
+    image: nginx:alpine
+    depends_on:
+      build-client:
+        condition: service_completed_successfully
+    ports:
+      - "80:80"
+    volumes:
+      - ./client/build:/usr/share/nginx/html:ro
+      - ./nginx:/etc/nginx/conf.d:ro
 
 volumes:
   mongo_data:

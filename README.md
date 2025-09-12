@@ -35,7 +35,11 @@ This is a full-stack MERN application that manages the basic information of empl
 2. Generate self-signed certificates
 
     ```bash
-    docker compose build certs && docker compose run --rm certs
+    docker compose build certs
+    ```
+
+    ```bash
+    docker compose run --rm certs
     ```
   
 3. Start the stack

@@ -1,15 +1,15 @@
 services:
   mongo:
-    build: 
+    build:
       context: ./db
-      dockerfile: Dockerfile.db 
+      dockerfile: Dockerfile.db
     environment:
       MONGO_INITDB_DATABASE: employees
     volumes:
       - mongo_data:/data/db
-    ports:
-      - "27017:27017"
     restart: always
+    networks:
+      - backend
 
   mongo-express:
     build:
@@ -19,11 +19,14 @@ services:
       - mongo
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/employees
-      ME_CONFIG_BASICAUTH_USERNAME: admin 
+      ME_CONFIG_BASICAUTH_USERNAME: admin
       ME_CONFIG_BASICAUTH_PASSWORD: admin
     ports:
-      - "8081:8081"   
+      - "8081:8081"              # reachable at http://localhost:8081
     restart: always
+    networks:
+      - backend                  # talk to mongo
+      - frontend                 # host can hit published port
 
   api:
     build:
@@ -34,12 +37,13 @@ services:
       PORT: 5000
       ATLAS_URI: mongodb://mongo:27017/employees
     depends_on:
-      mongo:
-        condition: service_healthy
-    ports:
-      - "5000:5000"                
+      - mongo
     restart: always
-  
+    networks:
+      - backend                  # DB access
+      - frontend                 # traffic via nginx
+    # no host port exposure; nginx will proxy to http://api:5000
+
   build-client:
     build:
       context: ./client
@@ -53,10 +57,18 @@ services:
       build-client:
         condition: service_completed_successfully
     ports:
-      - "80:80"
+      - "80:80"                  # SPA at http://localhost
     volumes:
       - ./client/build:/usr/share/nginx/html:ro
       - ./nginx:/etc/nginx/conf.d:ro
+    restart: always
+    networks:
+      - frontend
+
+networks:
+  backend:
+    internal: true               # private network (DB side)
+  frontend: {}                   # public-facing network
 
 volumes:
   mongo_data:

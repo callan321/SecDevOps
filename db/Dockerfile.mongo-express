@@ -1,5 +1,5 @@
-# db/Dockerfile.mongo-express
-FROM mongo-express:latest
+# Get mongo express image currently the latest before sumbmission
+FROM mongo-express:1.0.2-18-alpine3.18
 
-# Expose the web UI port
+# Expose the web UI port default is 8081
 EXPOSE 8081

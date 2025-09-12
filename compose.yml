@@ -1,84 +1,131 @@
+# Top-level services for the app stack
 services:
+
+  # MongoDB database container
   mongo:
+    # Build the DB image from ./db/Dockerfile.db
     build:
       context: ./db
       dockerfile: Dockerfile.db
+    # Initialize the default database name on first run
     environment:
       MONGO_INITDB_DATABASE: employees
+    # Persist MongoDB data across container restarts
     volumes:
       - mongo_data:/data/db
+    # Auto-restart if the container stops
     restart: always
+    # Place Mongo on a private, non-internet-facing network
     networks:
       - backend
 
+  # Web-based Mongo admin UI
   mongo-express:
+    # Build a custom mongo-express image from ./db/Dockerfile.mongo-express
     build:
       context: ./db
       dockerfile: Dockerfile.mongo-express
+    # Ensure Mongo is up before starting
     depends_on:
       - mongo
+    # Tell mongo-express how to reach Mongo and protect the UI
+    # ME_CONFIG_MONGODB_URL: connection string to the "mongo" service on port 27017, DB "employees"
+    # ME_CONFIG_BASICAUTH_USERNAME / PASSWORD: simple HTTP Basic Auth for the UI
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/employees
       ME_CONFIG_BASICAUTH_USERNAME: admin
       ME_CONFIG_BASICAUTH_PASSWORD: admin
+    # Publish the mongo-express UI to the host on port 8081
     ports:
-      - "8081:8081"             
+      - "8081:8081"
+    # Auto-restart if the container stops
     restart: always
+    # Needs backend to reach Mongo; frontend is fine to keep consistent with the app tier
     networks:
       - backend
       - frontend
 
+  # Node.js API server
   api:
+    # Build the API image from ./server/Dockerfile
     build:
       context: ./server
       dockerfile: Dockerfile
+    # API runtime settings
+    # NODE_ENV: run in production mode
+    # PORT: process listens on 5000 inside the container
+    # ATLAS_URI: internal Mongo connection string (service name "mongo" on backend network)
     environment:
       NODE_ENV: production
       PORT: 5000
       ATLAS_URI: mongodb://mongo:27017/employees
+    # Ensure Mongo is up before starting the API
     depends_on:
       - mongo
+    # Auto-restart if the container stops
     restart: always
+    # Join both networks:
+    # - backend to talk to Mongo
+    # - frontend so Nginx can reverse-proxy /api to this service
     networks:
       - backend
       - frontend
 
-
+  # One-shot container that builds the static frontend
   build-client:
+    # Build using the client project
     build:
       context: ./client
+    # Output the compiled site to ./client/build on the host
     volumes:
       - ./client/build:/out
+    # Do not restart; this is a build step
     restart: "no"
 
+  # Nginx serving the compiled frontend and terminating TLS
   web:
-    image: nginx:alpine
+    # Build from repo root so the Dockerfile can COPY nginx/default.conf and client/build
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    # Wait for the client build and cert generation to complete
     depends_on:
       build-client:
         condition: service_completed_successfully
+      certs:
+        condition: service_completed_successfully
+    # Publish HTTPS and HTTP (HTTP redirected to HTTPS by Nginx)
     ports:
       - "80:80"
       - "443:443"
+    # Mount only TLS certs at runtime; the site and config are baked into the image
     volumes:
-      - ./client/build:/usr/share/nginx/html:ro
-      - ./nginx:/etc/nginx/conf.d:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
+    # Auto-restart if the container stops
     restart: always
+    # Public-facing app tier network
     networks:
       - frontend
 
+  # Helper container to generate local self-signed certs into ./nginx/ssl
   certs:
+    # Tiny image with openssl and bash
     build:
       context: ./nginx
       dockerfile: Dockerfile.certs
+    # Write certs into the repo's ./nginx directory
     volumes:
       - ./nginx:/work
+    # Run the generator script once, then exit
     entrypoint: ["/bin/bash", "/work/gen-certs.sh"]
 
+# Private network for database/backend comms; no external ingress
 networks:
   backend:
-    internal: true              
-  frontend: {}                   
+    internal: true
+  # App-tier network shared by web/api/mongo-express
+  frontend: {}
 
+# Named volume for MongoDB data persistence
 volumes:
   mongo_data:

@@ -1,7 +1,9 @@
+# get mongo version 8
 FROM mongo:8.0
 
+# expose default mongo port
 EXPOSE 27017
 
-# Use JSON form to avoid shell/quoting issues
+# Use Healthcheck using build in commands
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=5 \
   CMD ["mongosh","--quiet","--eval","db.adminCommand({ ping: 1 })"]

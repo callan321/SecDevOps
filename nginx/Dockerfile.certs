@@ -1,3 +1,6 @@
+# using mini linux image to run a bash command that cangenerate certs fir any device 
 FROM alpine:latest
+# add open ssl 
 RUN apk add --no-cache bash openssl
+# create work dir 
 WORKDIR /work

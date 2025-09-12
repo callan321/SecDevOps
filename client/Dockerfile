@@ -1,3 +1,4 @@
+# using node to generate static files from react 
 FROM node:18-alpine
 WORKDIR /web
 

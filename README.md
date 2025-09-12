@@ -47,3 +47,9 @@ This is a full-stack MERN application that manages the basic information of empl
     ```bash
     docker compose up -d --build
     ```
+
+4. To end the stack
+
+    ```bash
+    docker compose down
+    ```

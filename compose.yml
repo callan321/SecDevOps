@@ -22,11 +22,11 @@ services:
       ME_CONFIG_BASICAUTH_USERNAME: admin
       ME_CONFIG_BASICAUTH_PASSWORD: admin
     ports:
-      - "8081:8081"              # reachable at http://localhost:8081
+      - "8081:8081"             
     restart: always
     networks:
-      - backend                  # talk to mongo
-      - frontend                 # host can hit published port
+      - backend
+      - frontend
 
   api:
     build:
@@ -40,9 +40,9 @@ services:
       - mongo
     restart: always
     networks:
-      - backend                  # DB access
-      - frontend                 # traffic via nginx
-    # no host port exposure; nginx will proxy to http://api:5000
+      - backend
+      - frontend
+
 
   build-client:
     build:
@@ -57,18 +57,28 @@ services:
       build-client:
         condition: service_completed_successfully
     ports:
-      - "80:80"                  # SPA at http://localhost
+      - "80:80"
+      - "443:443"
     volumes:
       - ./client/build:/usr/share/nginx/html:ro
       - ./nginx:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     restart: always
     networks:
       - frontend
 
+  certs:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.certs
+    volumes:
+      - ./nginx:/work
+    entrypoint: ["/bin/bash", "/work/gen-certs.sh"]
+
 networks:
   backend:
-    internal: true               # private network (DB side)
-  frontend: {}                   # public-facing network
+    internal: true              
+  frontend: {}                   
 
 volumes:
   mongo_data:

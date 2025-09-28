@@ -6,14 +6,12 @@ A full-stack [MERN](https://www.mongodb.com/mern-stack) application for managing
 
 ## About the project
 
-This is a full-stack MERN application that manages the basic information of employees. The app uses an employee database from the MongoDB Atlas database and then display it using a React.
+This is a full-stack MERN application that manages the basic information of employees. The app uses an employee database from the MongoDB Atlas database and then displays it with React.
 
 ## Tech Stack
 
-**Client:** React, Bootstrap
-
-**Server:** NodeJS, ExpressJS
-
+**Client:** React, Bootstrap  
+**Server:** NodeJS, ExpressJS  
 **Database:** MongoDB
 
 ## Deployment on AWS
@@ -32,23 +30,25 @@ This is a full-stack MERN application that manages the basic information of empl
     cd SecDevOps
     ```
 
-2. Generate self-signed certificates
+2. **Generate self-signed certificates**
 
     ```bash
-    docker compose build certs
+    docker compose run --rm --build certs
     ```
 
+3. **Build the frontend**
+
     ```bash
-    docker compose run --rm certs
+    docker compose run --rm --build build-client
     ```
-  
-3. Start the stack
+
+4. **Start the stack**
 
     ```bash
     docker compose up -d --build
     ```
 
-4. To end the stack
+5. **Stop the stack**
 
     ```bash
     docker compose down
